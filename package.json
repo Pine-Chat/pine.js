@@ -1,12 +1,14 @@
 {
-  "name": "honk",
-  "version": "1.0.0",
-  "description": "",
+  "name": "honk.js",
+  "version": "1.0.4",
+  "description": "Node.js terminal chatting program made by DmmD and iiPython.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "honk", "honkjs", "honk.js", "terminal chat", "chat"
+  ],
   "author": "",
   "license": "ISC"
 }
