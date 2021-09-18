@@ -140,10 +140,10 @@ class Server extends Events {
 
     send(string) {
         if(!this.connection) throw new Error("No connection has been established yet");
-        this.connection.write({
+        this.connection.write(Packet.pack({
             action: "send",
             data: `${string}`
-        });
+        }));
     };
 
     /**
