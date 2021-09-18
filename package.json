@@ -1,14 +1,22 @@
 {
   "name": "honk.js",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Node.js terminal chatting program made by DmmD and iiPython.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/honk-net/honk.js.git"
+  },
   "keywords": [
-    "honk", "honkjs", "honk.js", "terminal chat", "chat"
+    "honk", "honk.js"
   ],
-  "author": "",
-  "license": "ISC"
+  "author": "Dm123321_31mD",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/honk-net/honk.js/issues"
+  },
+  "homepage": "https://github.com/honk-net/honk.js#readme"
 }
