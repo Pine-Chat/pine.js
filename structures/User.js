@@ -17,6 +17,15 @@ class User {
     };
 
     /**
+     * Returns whether or not the user is the client
+     * @readonly
+     * @returns {boolean}
+     */
+    get me() {
+        return this.client.username === this.username;
+    };
+
+    /**
      * Parses data for the user
      * @static
      * @param {object} data 
@@ -25,11 +34,12 @@ class User {
     static parse(data) {
         if(typeof data !== "object") throw new TypeError("Argument is not an object");
         return {
-            bot: data.bot,
+            bot: !!data.bot,
             engine: data.engine,
             joinedDate: new Date(data.joinedTimestamp),
             joinedTimestamp: data.joinedTimestamp,
             server: data.server,
+            system: !!data.system,
             username: data.username
         };
     };

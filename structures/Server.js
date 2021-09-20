@@ -42,7 +42,7 @@ class Server extends Events {
      */
     connect() {
         if(this.connection) throw new Error("A connection has already been established");
-        this.client.servers[Address.pack(this.host, this.port)] = this;
+        this.client.cache.get("servers")[Address.pack(this.host, this.port)] = this;
         this.connection = net.createConnection({ host: this.host, port: this.port });
         this.connection.write(Packet.pack({
             action: "identify",
@@ -56,26 +56,35 @@ class Server extends Events {
                 switch(packet.status) {
                     case 101: {
                         let user = new User(this.client, this, packet.affects);
-                        this.users[user.username] = user;
+                        this.cache.get("users")[user.username] = user;
                         this.broadcast("join", user);
                         break;
                     };
                     case 102: {
                         let user = this.user(packet.affects.username);
-                        delete this.users[packet.affects.username];
+                        delete this.cache.get("users")[packet.affects.username];
                         this.broadcast("leave", user);
                         break;
                     };
                     case 103: {
+                        this.cache.set("users", Object.fromEntries(packet.server.users.map(u => [
+                            u.username,
+                            new User(this.client, this, u)
+                        ])));
+                        this.cache.get("users")["System"] = new User(this.client, this, {
+                            bot: false,
+                            engine: "Honk.js",
+                            joinedDate: new Date(0),
+                            joinedTimestamp: 0,
+                            server: this,
+                            system: true,
+                            username: "System"
+                        });
                         this.connectedDate = new Date();
                         this.connectedTimestamp = Date.now();
                         this.createdDate = new Date(packet.createdTimestamp);
                         this.createdTimestamp = packet.createdTimestamp;
                         this.name = packet.server.name;
-                        this.users = Object.fromEntries(packet.server.users.map(u => [
-                            u.username,
-                            new User(this.client, this, u)
-                        ]));
                         this.broadcast("connect");
                         break;
                     };
@@ -84,7 +93,7 @@ class Server extends Events {
                         break;
                     };
                     case 201: {
-                        this.broadcast("notification", new Message(this.client, null, packet));
+                        this.broadcast("notification", new Message(this.client, this.user("System"), packet));
                         break;
                     };
                 };
@@ -92,13 +101,13 @@ class Server extends Events {
         });
         this.connection.on("end", () => {
             this.broadcast("disconnect");
+            this.cache.set("users", {});
             this.connection = null;
             this.connectedDate = null;
             this.connectedTimestamp = null;
             this.createdDate = null;
             this.createdTimestamp = null;
             this.name = null;
-            this.users = {};
         });
         this.connection.on("error", error => {
             this.broadcast("error", error);
@@ -111,7 +120,7 @@ class Server extends Events {
      */
     disconnect() {
         if(!this.connection) throw new Error("No connection has been established yet");
-        delete this.client.servers[Address.pack(this.host, this.port)];
+        delete this.client.cache.get("servers")[Address.pack(this.host, this.port)];
         this.connection.end(Packet.pack({ action: "disconnect" }));
     };
 
@@ -124,7 +133,9 @@ class Server extends Events {
     static parse(data) {
         if(typeof data !== "object") throw new TypeError("Argument is not an object");
         return {
-            cache: new Map(),
+            cache: new Map([
+                [ "users", {} ]
+            ]),
             connectedDate: null,
             connectedTimestamp: null,
             connection: null,
@@ -133,8 +144,7 @@ class Server extends Events {
             createdTimestamp: null,
             host: data.host,
             name: data.name,
-            port: data.port,
-            users: {}
+            port: data.port
         };
     };
 
@@ -153,7 +163,16 @@ class Server extends Events {
      */
     user(username) {
         if(typeof username !== "string") throw new TypeError("Argument is not a string");
-        return this.users[username];
+        return this.cache.get("users")[username];
+    };
+
+    /**
+     * Returns all users in the server
+     * @readonly
+     * @returns {User[]}
+     */
+    get users() {
+        return Object.values(this.cache.get("users"));
     };
 };
 

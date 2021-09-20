@@ -45,7 +45,7 @@ let client = new Client({ username: "USERNAME" });
 client.on("connect", server => {
     console.log(`I've joined a server called ${server.name}!`);
 });
-client.on("message", message => {
+client.on("message", (message, server) => {
     console.log(`${server.name} >> ${message.user.username} | ${message.content}`);
 });
 
@@ -71,9 +71,9 @@ let client = new Client({
 client.on("connect", server => {
     console.log(`I've joined a server called ${server.name}!`);
 });
-client.on("message", message => {
+client.on("message", (message, server) => {
     let args = message.content.split(" ");
-    if(args[0] === "ping") message.server.send("Pong!");
+    if(args[0] === "ping") server.send("Pong!");
 });
 
 // Joins server
@@ -86,7 +86,7 @@ iiPython
 - Bug finding & supporting
 
 # Contact Information
-Discord Username: DmmD - Dm123321_31mD Gaming#9423
-Discord Server (Fastest Approach): https://discord.gg/7yvKJfh3fa
-Email: dm12332131mdgaming@gmail.com
-Github: https://github.com/Dm12332131mD
+- Discord Username: `DmmD - Dm123321_31mD Gaming#9423`
+- Discord Server (Fastest Approach): https://discord.gg/7yvKJfh3fa
+- Email: `dm12332131mdgaming@gmail.com`
+- Github: https://github.com/Dm12332131mD

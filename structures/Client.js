@@ -58,11 +58,12 @@ class Client extends Events {
         if(typeof data !== "object") throw new TypeError("Argument is not an object");
         return {
             bot: data.bot,
-            cache: new Map(),
+            cache: new Map([
+                [ "servers", {} ]
+            ]),
             createdDate: new Date(),
             createdTimestamp: Date.now(),
-            username: data.username,
-            servers: {}
+            username: data.username
         };
     };
 
@@ -74,7 +75,16 @@ class Client extends Events {
      */
     server(host, port) {
         if(!Address.isAddress(host, port)) throw new TypeError("Argument is not a valid address");
-        return this.servers[Address.pack(host, port)];
+        return this.cache.get("servers")[Address.pack(host, port)];
+    };
+
+    /**
+     * Returns all servers in the server
+     * @readonly
+     * @returns {Server[]}
+     */
+    get servers() {
+        return Object.values(this.cache.get("servers"));
     };
 };
 
