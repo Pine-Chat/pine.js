@@ -29,9 +29,8 @@ class Packet extends null {
      */
     static unjam(v) {
         if(!(v instanceof Buffer) && typeof v !== "string") throw new TypeError("Argument is not a valid json");
-        let string = `[${(v instanceof Buffer ? v.toString() : v).replace(/}{/g, "},{")}]`;
-        if(!Packet.isJSON(string)) throw new TypeError("Argument is not a valid json");
-        return Packet.unpack(string);
+        let packets = (v instanceof Buffer ? v.toString() : v).split("\0x55").slice(-1);
+        return packets.map(p => Packet.unpack(p));
     };
 
     /**
