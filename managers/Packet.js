@@ -29,7 +29,7 @@ class Packet extends null {
      */
     static unjam(v) {
         if(!(v instanceof Buffer) && typeof v !== "string") throw new TypeError("Argument is not a valid json");
-        let packets = (v instanceof Buffer ? v.toString() : v).split("\0x55").slice(-1);
+        let packets = (v instanceof Buffer ? v.toString() : v).split("\0x55").slice(0, -1);
         return packets.map(p => Packet.unpack(p));
     };
 

@@ -35,6 +35,7 @@ class User {
         if(typeof data !== "object") throw new TypeError("Argument is not an object");
         return {
             bot: !!data.bot,
+            client: data.client,
             engine: data.engine,
             joinedDate: new Date(data.joinedTimestamp),
             joinedTimestamp: data.joinedTimestamp,
