@@ -1,6 +1,6 @@
 {
   "name": "honk.js",
-  "version": "2.0.2",
+  "version": "3.0.0",
   "description": "Node.js terminal chatting program made by DmmD and iiPython.",
   "main": "index.js",
   "scripts": {
@@ -11,12 +11,16 @@
     "url": "git+https://github.com/honk-net/honk.js.git"
   },
   "keywords": [
-    "honk", "honk.js"
+    "honk",
+    "honk.js"
   ],
   "author": "Dm123321_31mD",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/honk-net/honk.js/issues"
   },
-  "homepage": "https://github.com/honk-net/honk.js#readme"
+  "homepage": "https://github.com/honk-net/honk.js#readme",
+  "dependencies": {
+    "@dmmdjs/dutils": "^1.0.3"
+  }
 }
