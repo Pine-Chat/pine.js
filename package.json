@@ -21,6 +21,6 @@
   },
   "homepage": "https://github.com/honk-net/honk.js#readme",
   "dependencies": {
-    "@dmmdjs/dutils": "^1.0.3"
+    "@dmmdjs/dutils": "^1.0.4"
   }
 }
