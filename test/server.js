@@ -1,26 +1,28 @@
 "use strict";
 
 // Imports
-const { Server } = require("../index.js").server
+const { Server } = require("../index.js").server;
 
 // Variables
-let server = new Server("localhost:2075");
+let server = new Server("localhost:2075", {
+    bots: true,
+    limit: -1,
+    name: "Honknet",
+    password: "honknet",
+    private: true
+});
 
 // Events
 server
-    .on("start", () => console.log(`Server is now online on: ${server.address}`))
-    .on("end", () => {
-        console.log(`Server is shutting down`);
-        server.start();
-    })
-    .on("error", error => {})
-    .on("connect", user => console.log(`User (#${user.uid}) has joined the server`))
-    .on("disconnect", user => console.log(`User (#${user.uid}) left the server`))
-    .on("message", message => console.log(`${message.user.uid} > ${message.content}`));
+    // System
+    .on("error", error => console.log(`Error: ${error.content}`))
+    .on("online", () => console.log(`Server is now online`))
+    .on("offline", () => console.log(`Server is not offline`))
 
-// Start
+    // Server
+    .on("join", user => console.log(`${server.name} | ${user.tag} joined the server`))
+    .on("leave", user => console.log(`${server.name} | ${user.tag} left the server`))
+    .on("message", message => console.log(`${message.server.name} | ${message.user.tag} > ${message.content}`))
+
+// Connect
 server.start();
-
-
-
-setTimeout(() => server.end(), 10000);
