@@ -79,6 +79,10 @@ class Client extends Events {
     get username() {
         return this.#username;
     };
+
+    write(ip, port, data) {
+
+    };
 };
 
 // Exports
