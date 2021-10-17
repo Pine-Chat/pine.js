@@ -21,7 +21,7 @@ Recommended:
 
 Open a terminal and type the following if you wish to install it from npm:
 ```
-npm install pine.js --save
+npm install @pinechat/pine.js --save
 ```
 
 
@@ -31,12 +31,12 @@ You can import pine.js to this package by typing the following.
 
 CJS:
 ```js
-const pine = require("pine.js");
+const pine = require("@pinechat/pine.js");
 ```
 
 ES6:
 ```js
-import pine from "pine.js";
+import pine from "@pinechat/pine.js";
 ```
 
 ## Contact

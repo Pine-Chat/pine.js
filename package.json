@@ -1,5 +1,5 @@
 {
-  "name": "pine.js",
+  "name": "@pinechat/pine.js",
   "version": "1.0.0",
   "description": "A terminal-based chatting framework built in Node.js by DmmD.",
   "main": "index.js",
