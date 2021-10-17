@@ -1,26 +1,63 @@
 "use strict";
 
+// Imports
+const isObject = require("../../src/functions/isObject.js");
+
 class Message {
+    #data;
+    #user;
+    
     constructor(data, user) {
-        this.data = data;
-        this.user = user;
-        Object.assign(this, this.data);
+        if(!isObject(data)) throw new TypeError("Data is not an object");
+        this.#data = {
+            content: data.content,
+            createdTimestamp: data.createdTimestamp,
+            mid: data.mid,
+            system: data.system
+        };
+        this.#user = user;
     };
 
-    get createDate() {
-        return new Date(this.data.createTimestamp);
+    get content() {
+        return `${this.#data.content}`;
+    };
+
+    get createdDate() {
+        return new Date(this.#data.createdTimestamp);
+    };
+
+    get createdTimestamp() {
+        return +this.#data.createdTimestamp;
+    };
+
+    get mid() {
+        return +this.#data.mid;
     };
 
     get server() {
-        return this.user.server;
+        return this.#user.server;
+    };
+
+    get system() {
+        return !!this.#data.system;
     };
 
     toJSON() {
         return {
-            content: this.data.content,
-            createTimestamp: this.data.createTimestamp,
-            uid: this.user.uid
+            content: this.content,
+            createdTimestamp: this.createdTimestamp,
+            mid: this.mid,
+            system: this.system,
+            uid: this.#user.uid
         };
+    };
+
+    toString() {
+        return JSON.stringify(this.toJSON()) + "\0xdiv";
+    };
+
+    get user() {
+        return this.#user;
     };
 };
 

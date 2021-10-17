@@ -1,0 +1,12 @@
+{
+    "bans": [],
+    "host": "localhost",
+    "limit": {
+        "message": 250,
+        "username": 16
+    },
+    "locked": false,
+    "password": null,
+    "port": 2075,
+    "size": 10
+}

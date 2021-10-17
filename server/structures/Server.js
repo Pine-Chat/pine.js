@@ -1,104 +1,176 @@
 "use strict";
 
 // Imports
+const Configuration = require("./Configuration.js");
+const CONFIGURATION_DEFAULT = require("../src/CONFIGURATION_DEFAULT.json");
 const Events = require("events");
+const getFiles = require("../../src/functions/getFiles.js");
+const isObject = require("../../src/functions/isObject.js");
 const net = require("net");
-const Packet = require("./Packet.js");
+const Packet = require("../../src/structures/Packet.js");
+const PacketError = require("../../src/structures/PacketError.js");
+const path = require("path");
+const User = require("./User.js");
 
 // Variables
-let handlers = {
-    AUTHENTICATE: require("../handlers/AUTHENTICATE.js"),
-    DISCONNECT: require("../handlers/DISCONNECT.js"),
-    ERROR: require("../handlers/ERROR.js"),
-    MESSAGE: require("../handlers/MESSAGE.js")
-};
+let handlers = getFiles(path.join(__dirname, "../handlers/"));
 
 class Server extends Events {
-    #socket = null;
-    #uid = null;
+    #configuration;
+    #createdTimestamp;
+    #socket;
+    #system = null;
     #users = new Map();
 
-    constructor(host, port) {
-        if(typeof host !== "string") throw new Error("Invalid host name");
-        if(!Number.isInteger(port) || port < 0 || port > 65535) throw new Error("Invalid port");
+    constructor(configuration) {
         super();
-        this.createTimestamp = Date.now();
-        this.host = host;
-        this.port = port;
-        this.startTimestamp = Date.now();
+        if(configuration instanceof Configuration) this.#configuration = configuration;
+        else this.#configuration = new Configuration(isObject(configuration) ? configuration : CONFIGURATION_DEFAULT);
+    };
+
+    get address() {
+        return `${this.#configuration.get("host")}:${this.#configuration.get("port")}`;
+    };
+
+    ban(uid) {
+        if(!this.#users.has(uid)) throw new Error("Cannot find that user");
+        let user = this.#users.get(uid);
+        this.#configuration.get("bans").push(user.ip.address);
+        user.disconnect();
     };
 
     broadcast(data) {
-        if(!this.#socket) throw new Error("Server is not online yet");
-        this.#users.forEach(u => u.write(data));
+        this.#users.forEach(v => v.write(data));
         super.emit("broadcast", data);
     };
 
-    get createDate() {
-        return new Date(this.createTimestamp);
+    get configuration() {
+        return this.#configuration;
+    };
+
+    get createdDate() {
+        return this.#createdTimestamp ? new Date(this.#createdTimestamp) : null;
+    };
+
+    get createdTimestamp() {
+        return this.#createdTimestamp ?? null;
     };
 
     end() {
-        if(!this.#socket) throw new Error("Server is not online yet");
+        if(!this.#socket) throw new Error("The server is offline already");
         this.#socket.close();
     };
 
+    kick(uid) {
+        if(!this.#users.has(uid)) throw new Error("Cannot find that user");
+        this.#users.get(uid).disconnect();
+    };
+
+    get online() {
+        return !!this.#socket;
+    };
+
     start() {
-        if(this.#socket) throw new Error("Server is already online");
+        if(this.#socket) throw new Error("The server is online already");
+        let host = this.#configuration.get("host");
+        let port = this.#configuration.get("port");
+        if(!host || !port) throw new TypeError("The host or port is missing in the configuration");
+        if(!Number.isInteger(port) || port <= 0 || port > 65535) throw new Error("Invalid port number");
         this.#socket = net.createServer()
             .on("close", () => {
                 super.emit("end");
-                this.#socket = this.startTimestamp = this.#uid = null;
+                this.#createdTimestamp = null;
+                this.#socket = null;
+                this.#users.clear();
             })
             .on("connection", connection => {
-                let user = null, timeout = setTimeout(() => connection.end(Packet.pack({
-                    data: {
-                        code: "AUTHENTICATION_TIMEOUT",
-                        message: "Authenticate: Authentication timed out"
-                    },
-                    type: "ERROR"
-                })), 10000);
+                let user = null, timeout = setTimeout(() => {
+                    if(user !== null) connection.end();
+                }, 10000);
                 connection
-                    .on("data", buffer => {
-                        Packet.unpack(buffer).forEach(data => {
-                            try {
-                                super.emit("data", data);
-                                handle(data?.type, { data }, this);
-                            }
-                            catch(error) { return handle("ERROR", { error }, this) };
+                    .on("close", () => {
+                        if(!user) return;
+                        this.#users.delete(user.uid);
+                        super.emit("leave", user);
+                        this.broadcast({
+                            data: user.toJSON(),
+                            type: "LEAVE"
                         });
                     })
-                    .on("end", () => handle("DISCONNECT", {}, this))
-                    .on("error", error => handle("ERROR", { error }, this));
-                function handle(type, meta, server) {
-                    if(type in handlers) handlers[type](Object.assign({
-                        connection,
-                        server,
-                        socket: server.#socket,
-                        timeout,
-                        get uid() { return server.#uid },
-                        set uid(uid) { server.#uid = uid },
-                        get user() { return user },
-                        set user(value) { user = value },
-                        users: server.#users
-                    }, meta));
-                };
+                    .on("data", buffer => {
+                        try {
+                            Packet.parse(buffer).forEach(packet => {
+                                let data = packet.toJSON();
+                                if(!("type" in data) || !(data.type in handlers))
+                                    throw new PacketError("Packet type is invalid or does not exist", "PACKET_INVALID_TYPE");
+                                if(!("data" in data) || typeof data !== "object")
+                                    throw new PacketError("Packet data is invalid or does not exist", "PACKET_INVALID_DATA");
+                                handlers[data.type]({
+                                    connection,
+                                    data,
+                                    packet,
+                                    server: this,
+                                    system: this.#system,
+                                    timeout,
+                                    get user() { return user },
+                                    set user(v) { return user = v },
+                                    users: this.#users
+                                });
+                            });
+                        }
+                        catch(error) {
+                            super.emit("error", error);
+                            let packetError = error instanceof PacketError ? error : PacketError.fromError(error);
+                            super.emit("packetError", packetError);
+                            if(!connection.destroyed) user.write({
+                                data: packetError.toJSON(),
+                                type: "ERROR"
+                            });
+                        };
+                    })
+                    .on("error", error => {
+                        super.emit("error", error);
+                        if(!connection.destroyed) connection.end();
+                    });
             })
-            .on("error", error => super.emit("error", error))
+            .on("error", error => {
+                super.emit("error", error);
+                this.end();
+            })
             .on("listening", () => {
-                this.startTimestamp = Date.now();
-                this.#uid = Math.floor(Date.now() * (0.5 + Math.random()) % 3000000000000);
+                this.#createdTimestamp = Date.now();
+                this.#system = new User(this.#socket, {
+                    bot: false,
+                    joinedTimestamp: this.#createdTimestamp,
+                    system: true,
+                    uid: 1,
+                    username: "System"
+                }, this);
                 super.emit("start");
             })
-            .listen(this.port, this.host);
+            .listen(port, host);
     };
 
-    get startDate() {
-        return this.startTimestamp ? new Date(this.startTimestamp) : null;
+    toJSON() {
+        return {
+            address: this.address,
+            configuration: this.#configuration.toJSON(),
+            createdTimestamp: this.createdTimestamp,
+            uptime: this.uptime,
+            users: this.users.map(v => v.toJSON())
+        };
+    };
+
+    toString() {
+        return JSON.stringify(this.toJSON()) + "\0xdiv";
+    };
+
+    get uptime() {
+        return this.#socket ? Date.now() - this.#createdTimestamp : null;
     };
 
     get users() {
-        return this.#users.values();
+        return Array.from(this.#users.values());
     };
 };
 

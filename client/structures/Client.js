@@ -2,68 +2,59 @@
 
 // Imports
 const Events = require("events");
-const net = require("net");
-const Packet = require("./Packet.js");
-
-// Variables
-let handlers = {
-    AUTHENTICATE: require("../handlers/AUTHENTICATE.js"),
-    DISCONNECT: require("../handlers/DISCONNECT.js"),
-    ERROR: require("../handlers/ERROR.js"),
-    SYSTEM: require("../handlers/SYSTEM.js")
-};
+const isObject = require("../../src/functions/isObject");
+const Server = require("./Server.js");
 
 class Client extends Events {
+    #data;
     #servers = new Map();
-    #sid = Math.floor(Date.now() * (0.5 + Math.random()) % 3000000000000);
-
-    constructor(username = "Guest", bot = false) {
+    
+    constructor(data) {
         super();
-        this.username = username;
-        this.bot = bot;
+        if(!isObject(data)) throw new TypeError("Data is not an object");
+        this.#data = {
+            bot: data.bot ?? false,
+            username: data.username
+        };
+    };
+
+    get bot() {
+        return !!this.#data.bot;
     };
 
     connect(host, port) {
-        try {
-            let socket = net.createConnection(port, host), server;
-            socket
-                .on("connect", () => socket.write(Packet.pack({
-                    bot: !!this.bot,
-                    username: `${this.username}`
-                })))
-                .on("data", buffer => {
-                    Packet.unpack(buffer).forEach(data => {
-                        try {
-                            super.emit("data", data);
-                            handle(data?.type, { data }, this);
-                        }
-                        catch(error) { return handle("ERROR", { error }, this) };
-                    });
-                })
-                .on("end", () => handle("DISCONNECT", {}, this))
-                .on("error", error => handle("ERROR", { error }, this));
-            function handle(type, meta, client) {
-                if(type in handlers) handlers[type](Object.assign({
-                    client,
-                    get sid() { return client.#sid },
-                    set sid(sid) { client.#sid = sid },
-                    get server() { return user },
-                    set server(value) { server = value },
-                    servers: client.#servers,
-                    socket
-                }, meta));
-            };
+        let server = new Server({
+            host, port
+        }, this);
+        server
+            .on("connect", () => this.#servers.set(server.ip.full, server))
+            .on("disconnect", () => this.#servers.delete(server.ip.full, server))
+            .connect();
+    };
+
+    disconnect(server) {
+        if(!this.#servers.has(server.addresss)) throw new Error("Client is not connected to the server");
+        this.server.disconnect();
+    };
+
+    get servers() {
+        return Array.from(this.#servers.values());
+    };
+
+    toJSON() {
+        return {
+            bot: this.bot,
+            servers: this.servers.map(v => v.toJSON()),
+            username: this.username
         }
-        catch { throw new Error("Cannot connect to that server") };
     };
 
-    disconnect(sid) {
-        if(!this.#servers.has(sid)) throw new Error("Cannot find that server");
-
+    toString() {
+        return JSON.stringify(this.toJSON()) + "\0xdiv";
     };
 
-    servers() {
-        return this.#servers.values();
+    get username() {
+        return `${this.#data.username}`;
     };
 };
 

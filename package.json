@@ -1,7 +1,7 @@
 {
-  "name": "pine",
+  "name": "pine.js",
   "version": "1.0.0",
-  "description": "",
+  "description": "A terminal-based chatting framework built in Node.js by DmmD.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,9 +10,11 @@
     "type": "git",
     "url": "git+https://github.com/Pine-Chat/pine.js.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "pine", "pinechat"
+  ],
+  "author": "Dm123321_31mD",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Pine-Chat/pine.js/issues"
   },
